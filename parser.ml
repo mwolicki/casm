@@ -25,7 +25,8 @@ let (@=>) parser f = { parser with parse =
                         | Ok (v, txt) -> Ok (f v, txt)
                         | Error e-> Error e }
 
-let (@@) parser name  = { parser with name = name }
+let (@@) parser name  = { name = name;
+                          parse = fun txt -> match parser.parse txt with Ok v -> Ok v | Error _ -> Error ("Failed to parse" ^ name ^ " at pos " ^ (string_of_int txt.pos)) }
 
 let pChoose (parsers:'a parser list) : 'a parser =
     let rec parse txt = function
@@ -53,11 +54,13 @@ let pAll2 (parser:'a parser) : 'a list parser =
       parse = fun txt -> parse [] txt; }
 
 let pCharRange startChar endChar =
-    let startChar = Char.code startChar in
-    let endChar = Char.code endChar in
-    List.init (endChar - startChar) (fun ch -> Char.chr (startChar + ch) |> pChar)
-    |> pChoose
+    let startChar' = Char.code startChar in
+    let endChar' = Char.code endChar in
+    (List.init (endChar' - startChar') (fun ch -> Char.chr (startChar' + ch) |> pChar)
+    |> pChoose)
+    @@ "[" ^ (char_to_string startChar) ^ " .. " ^ (char_to_string endChar) ^ "]"
     |> pAll2
+    
 
 let chars_to_string x = String.concat "" (List.map (String.make 1) x)
 
@@ -92,4 +95,6 @@ let (|||) a b =  pChoose [a;b]
 
 let pInteger = (pStr "0x" >>> pInt) ||| pInt
 
-let pWhitespace = ['\r'; '\n'; ' '; '\t'] |> List.map pChar |> pChoose
+let pWhitespace = ['\r'; '\n'; ' '; '\t'] |> List.map pChar |> pChoose |> pAll2
+
+let pZeroWhitespace = { pWhitespace with parse = fun txt -> match pWhitespace.parse txt with Ok _ as o -> o | Error _ -> Ok ([], txt)  }
