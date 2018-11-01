@@ -1,6 +1,3 @@
-
-
-
 let is = function
 | Ok (i,_) -> "YAY " ^ (i) 
 | Error r -> "noooop " ^ r

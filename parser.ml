@@ -2,6 +2,19 @@ type txt = {
     str : string;
     pos : int;
 }
+
+
+let pos_to_string (txt:txt) =
+    let rec loop n ln pos txt = 
+    if n = 0 then ln, pos 
+    else match txt with
+        | [] -> ln, pos
+        | '\n'::ls -> loop (n - 1) (ln + 1) pos ls
+        | _::ls -> loop (n - 1) ln (pos + 1) ls in
+    let (ln, pos) = loop txt.pos 0 0 (txt.str |> String.to_seq |> List.of_seq) in
+    " line: " ^ (string_of_int ln) ^ " column: " ^ (string_of_int pos)
+
+
 let to_txt txt =  { str = txt; pos = 0 }
 
 type 'a parser = {
@@ -26,7 +39,7 @@ let (@=>) parser f = { parser with parse =
                         | Error e-> Error e }
 
 let (@@) parser name  = { name = name;
-                          parse = fun txt -> match parser.parse txt with Ok v -> Ok v | Error _ -> Error ("Failed to parse" ^ name ^ " at pos " ^ (string_of_int txt.pos)) }
+                          parse = fun txt -> match parser.parse txt with Ok v -> Ok v | Error _ -> Error ("Failed to parse" ^ name ^ " at " ^ (pos_to_string txt)) }
 
 let pChoose (parsers:'a parser list) : 'a parser =
     let rec parse txt = function
