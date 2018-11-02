@@ -1,8 +1,3 @@
-let is = function
-| Ok (i,_) -> "YAY " ^ (i) 
-| Error r -> "noooop " ^ r
-
-
 let load_file filename : string =
     let lines = ref [] in
     let chan = open_in filename in
@@ -16,12 +11,41 @@ let load_file filename : string =
 
 open Parser
 
-let line = 
-    (pZeroWhitespace >>> pString <|> pAll2 (pWhitespace >>> pString) <<< pZeroWhitespace) @=> fun (a, x)-> a ^" " ^ String.concat "<->" x 
+type name = string
+type arg = string
+type op = string
+
+type ast =
+| Op of op * arg list
+| Label of name
+
+let ast_to_string = function
+| Op (op, args) -> op ^ " (" ^ (String.concat ", " args ) ^ ")" 
+| Label name -> name ^ ":"
+
+let is = function
+| Ok (i,_) -> "YAY " ^ (ast_to_string i) 
+| Error r -> "noooop " ^ r
+
+
+let comment = pChar '#' >>> pAll2(pZeroWhitespace >>> pString) @=> ignore
+let op = (pZeroWhitespace >>> pString <|> pAll2 (pWhitespace >>> pString) <<< pZeroWhitespace) @=> fun (name, args)-> Op (name, args)
+let label = (pZeroWhitespace >>> pString <<< pChar ':') @=> fun name -> Label name
+let line = ((op ||| label) <<<? comment) 
+
+let lines = refl(fun lines -> 
+    (((line <<< pChar '\n') <|> lines) @=> fun (a,b) -> a::b)
+    ||| (line @=> fun a -> [a]))
+
+
 
 let () =
     let o = load_file "test.asm" in
     
-    String.split_on_char '\n' o
-    |> List.map (fun x->Parser.to_txt x |> line.parse )
-    |> List.iter (fun z->is z |> print_endline)
+    match o |> Parser.to_txt |> lines.parse with
+    | Ok (i,_) ->
+        let t = List.map ast_to_string i in
+        "Yay " ^ String.concat "\n" t |> print_endline
+    | Error r -> "noooop " ^ r |> print_endline
+    
+

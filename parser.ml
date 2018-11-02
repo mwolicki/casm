@@ -104,10 +104,21 @@ let (<|>) a b =
 let (>>>) a b = (a <|> b) @=> snd
 let (<<<) a b =  (a <|> b) @=> fst
 
+let (<<<?) a b = a <<< {
+    name = "try parse " ^ b.name;
+    parse = fun txt -> match b.parse txt with Ok (_, txt) -> Ok ((), txt) | Error _ -> Ok ((), txt) }
+
 let (|||) a b =  pChoose [a;b]
 
 let pInteger = (pStr "0x" >>> pInt) ||| pInt
 
-let pWhitespace = ['\r'; '\n'; ' '; '\t'] |> List.map pChar |> pChoose |> pAll2
+let pWhitespace = ['\r'; ' '; '\t'] |> List.map pChar |> pChoose |> pAll2
 
 let pZeroWhitespace = { pWhitespace with parse = fun txt -> match pWhitespace.parse txt with Ok _ as o -> o | Error _ -> Ok ([], txt)  }
+
+let refl (p: 'a parser -> 'a parser) : 'a parser =
+    let r = ref (fun () -> failwith "impossible") in
+    let z = p { name = "refl"; parse = fun txt -> (!r()).parse txt } in
+    let x = fun () -> z in
+    r := x;
+    z
