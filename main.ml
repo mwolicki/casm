@@ -12,7 +12,10 @@ let load_file filename : string =
 open Parser
 
 type name = string
-type arg = string
+type arg = 
+| Ident of string
+| Numb of int
+
 type op = string
 
 type ast =
@@ -20,7 +23,9 @@ type ast =
 | Label of name
 
 let ast_to_string = function
-| Op (op, args) -> op ^ " (" ^ (String.concat ", " args ) ^ ")" 
+| Op (op, args) -> 
+    let args = args |> List.map (function Numb i -> string_of_int i | Ident i -> i) in
+    op ^ " (" ^ (String.concat ", " args ) ^ ")" 
 | Label name -> name ^ ":"
 
 let is = function
@@ -29,7 +34,9 @@ let is = function
 
 
 let comment = pChar '#' >>> pAll2(pZeroWhitespace >>> pString) @=> ignore
-let op = (pZeroWhitespace >>> pString <|> pAll2 (pWhitespace >>> pString) <<< pZeroWhitespace) @=> fun (name, args)-> Op (name, args)
+let op = 
+    let pArg = pWhitespace >>> ((pString @=> fun a -> Ident a) ||| (pInteger @=> fun a -> Numb a)) in
+    (pZeroWhitespace >>> pString <|> pAll2 pArg <<< pZeroWhitespace) @=> fun (name, args)-> Op (name, args)
 let label = (pZeroWhitespace >>> pString <<< pChar ':') @=> fun name -> Label name
 let line = ((op ||| label) <<<? comment) 
 
