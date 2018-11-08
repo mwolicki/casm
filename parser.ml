@@ -23,14 +23,14 @@ type 'a parser = {
 
 let char_to_string = String.make 1
 
-let pChar (ch:char) : char parser =
-    let str_ch = char_to_string ch in
-    { name = "parse char '" ^ str_ch ^ "'";
+let (<|>) a b = 
+    { name = a.name ^ " AND " ^ b.name;
       parse = fun txt -> 
-        if String.length txt.str <= txt.pos then Error ("Coldn't match char '" ^ str_ch ^ "' as input string is empty")
-        else if txt.str.[txt.pos] = ch then Ok (ch, { txt with pos = txt.pos + 1 })
-        else Error ("Coldn't match char '" ^ str_ch ^ "' with '"^ (char_to_string txt.str.[txt.pos]) ^"'")}
-
+        match a.parse txt with
+        | Ok (v1, txt) -> begin match b.parse txt with 
+            | Ok (v2, txt) -> Ok ((v1,v2), txt)
+            | Error t -> Error t end
+        | Error t -> Error t }
 
 let (@=>) parser f = { parser with parse = 
                         fun txt -> 
@@ -41,12 +41,39 @@ let (@=>) parser f = { parser with parse =
 let (@@) parser name  = { name = name;
                           parse = fun txt -> match parser.parse txt with Ok v -> Ok v | Error _ -> Error ("Failed to parse" ^ name ^ " at " ^ (pos_to_string txt)) }
 
+let (>>>) a b = (a <|> b) @=> snd
+let (<<<) a b =  (a <|> b) @=> fst
+
+let (<<<?) a b = a <<< {
+    name = "try parse " ^ b.name;
+    parse = fun txt -> match b.parse txt with Ok (_, txt) -> Ok ((), txt) | Error _ -> Ok ((), txt) }
+
+
+let pChar (ch:char) : char parser =
+    let str_ch = char_to_string ch in
+    { name = "parse char '" ^ str_ch ^ "'";
+      parse = fun txt -> 
+        if String.length txt.str <= txt.pos then Error ("Coldn't match char '" ^ str_ch ^ "' as input string is empty")
+        else if txt.str.[txt.pos] = ch then Ok (ch, { txt with pos = txt.pos + 1 })
+        else Error ("Coldn't match char '" ^ str_ch ^ "' with '"^ (char_to_string txt.str.[txt.pos]) ^"'")}
+
+let pNotChar (ch:char) : char parser =
+    let str_ch = char_to_string ch in
+    { name = "parse anything but char '" ^ str_ch ^ "'";
+      parse = fun txt -> 
+        if String.length txt.str <= txt.pos then Error ("Could match char '" ^ str_ch ^ "' as input string is empty")
+        else if txt.str.[txt.pos] != ch then Ok (txt.str.[txt.pos], { txt with pos = txt.pos + 1 })
+        else Error ("Coldn't match char '" ^ str_ch ^ "' with '"^ (char_to_string txt.str.[txt.pos]) ^"'")}
+
+
 let pChoose (parsers:'a parser list) : 'a parser =
     let rec parse txt = function
     | [] -> Error ("None of parsers has succeeded: " ^ (parsers |> List.map (fun x->x.name) |> String.concat ", "))
     | p::ps -> match p.parse txt with Ok _ as o -> o | Error _ -> parse txt ps in
     { name = "any parser";
       parse = fun txt -> parse txt parsers; }
+
+let (|||) a b =  pChoose [a;b]
 
 let pAll (parsers:'a parser list) : 'a list parser =
     let rec parse acc txt = function
@@ -73,11 +100,13 @@ let pCharRange startChar endChar =
     |> pChoose)
     @@ "[" ^ (char_to_string startChar) ^ " .. " ^ (char_to_string endChar) ^ "]"
     |> pAll2
-    
+
 
 let chars_to_string x = String.concat "" (List.map (String.make 1) x)
 
 let pString = pCharRange 'A' 'z' @=> chars_to_string
+
+let pStringLiteral (quote:char) = pChar quote >>> (pAll2 (pNotChar quote) @=> chars_to_string) <<< pChar quote
 
 let pStr str = (String.to_seq str |> List.of_seq |> List.map pChar |> pAll) @@ ("parse string " ^ str)
 let pInt = 
@@ -92,23 +121,6 @@ let pInt =
             | Error e -> Error e }
 
 
-let (<|>) a b = 
-    { name = a.name ^ " AND " ^ b.name;
-      parse = fun txt -> 
-        match a.parse txt with
-        | Ok (v1, txt) -> begin match b.parse txt with 
-            | Ok (v2, txt) -> Ok ((v1,v2), txt)
-            | Error t -> Error t end
-        | Error t -> Error t }
-
-let (>>>) a b = (a <|> b) @=> snd
-let (<<<) a b =  (a <|> b) @=> fst
-
-let (<<<?) a b = a <<< {
-    name = "try parse " ^ b.name;
-    parse = fun txt -> match b.parse txt with Ok (_, txt) -> Ok ((), txt) | Error _ -> Ok ((), txt) }
-
-let (|||) a b =  pChoose [a;b]
 
 let pInteger = (pStr "0x" >>> pInt) ||| pInt
 
@@ -122,3 +134,5 @@ let refl (p: 'a parser -> 'a parser) : 'a parser =
     let x = fun () -> z in
     r := x;
     z
+
+

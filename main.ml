@@ -21,29 +21,35 @@ type op = string
 type ast =
 | Op of op * arg list
 | Label of name
+| Directive of name * arg list
 
 let ast_to_string = function
 | Op (op, args) -> 
     let args = args |> List.map (function Numb i -> string_of_int i | Ident i -> i) in
     op ^ " (" ^ (String.concat ", " args ) ^ ")" 
+| Directive (op, args) -> 
+    let args = args |> List.map (function Numb i -> string_of_int i | Ident i -> i) in
+    "!" ^ op ^ " (" ^ (String.concat ", " args ) ^ ")" 
 | Label name -> name ^ ":"
 
 let is = function
 | Ok (i,_) -> "YAY " ^ (ast_to_string i) 
 | Error r -> "noooop " ^ r
 
+let comment = pChar '#' >>> pAll2(pNotChar '\n') @=> ignore
 
-let comment = pChar '#' >>> pAll2(pZeroWhitespace >>> pString) @=> ignore
+let pArg = pWhitespace >>> ((pString @=> fun a -> Ident a) ||| (pInteger @=> fun a -> Numb a) ||| (pStringLiteral '"'  @=> fun a -> Ident a))
+
+let directive = 
+    (pZeroWhitespace >>> pChar '!' >>> pString <|> pAll2 pArg <<< pZeroWhitespace) @=> fun (name, args)-> Directive (name, args)
+
 let op = 
-    let pArg = pWhitespace >>> ((pString @=> fun a -> Ident a) ||| (pInteger @=> fun a -> Numb a)) in
     (pZeroWhitespace >>> pString <|> pAll2 pArg <<< pZeroWhitespace) @=> fun (name, args)-> Op (name, args)
 let label = (pZeroWhitespace >>> pString <<< pChar ':') @=> fun name -> Label name
-let line = ((op ||| label) <<<? comment) 
+let newLineAndEmptyLines = pAll2(pZeroWhitespace <<<? comment  >>> pChar '\n')
+let line = directive ||| op ||| label
 
-let lines = refl(fun lines -> 
-    (((line <<< pChar '\n') <|> lines) @=> fun (a,b) -> a::b)
-    ||| (line @=> fun a -> [a]))
-
+let lines = refl(fun lines -> (((line <<< newLineAndEmptyLines) <|> lines) @=> fun (a,b) -> a::b) ||| (line @=> fun a -> [a]))
 
 
 let () =
