@@ -106,7 +106,7 @@ let chars_to_string x = String.concat "" (List.map (String.make 1) x)
 
 let pString = pCharRange 'A' 'z' @=> chars_to_string
 
-let pStringLiteral (quote:char) = pChar quote >>> (pAll2 (pNotChar quote) @=> chars_to_string) <<< pChar quote
+let pStringLiteral (quote:char) = pChar quote >>> (pAll2 ((pChar '\\' >>> pChar quote) ||| pNotChar quote) @=> chars_to_string) <<< pChar quote
 
 let pStr str = (String.to_seq str |> List.of_seq |> List.map pChar |> pAll) @@ ("parse string " ^ str)
 let pInt = 

@@ -37,20 +37,15 @@ let is = function
 | Error r -> "noooop " ^ r
 
 let comment = pChar '#' >>> pAll2(pNotChar '\n') @=> ignore
-
 let pArg = pWhitespace >>> ((pString @=> fun a -> Ident a) ||| (pInteger @=> fun a -> Numb a) ||| (pStringLiteral '"'  @=> fun a -> Ident a))
-
 let directive = 
     (pZeroWhitespace >>> pChar '!' >>> pString <|> pAll2 pArg <<< pZeroWhitespace) @=> fun (name, args)-> Directive (name, args)
-
 let op = 
     (pZeroWhitespace >>> pString <|> pAll2 pArg <<< pZeroWhitespace) @=> fun (name, args)-> Op (name, args)
 let label = (pZeroWhitespace >>> pString <<< pChar ':') @=> fun name -> Label name
 let newLineAndEmptyLines = pAll2(pZeroWhitespace <<<? comment  >>> pChar '\n')
 let line = directive ||| op ||| label
-
 let lines = refl(fun lines -> (((line <<< newLineAndEmptyLines) <|> lines) @=> fun (a,b) -> a::b) ||| (line @=> fun a -> [a]))
-
 
 let () =
     let o = load_file "test.asm" in
