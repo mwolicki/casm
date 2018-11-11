@@ -13,8 +13,6 @@ let load_file filename : string =
         close_in chan;
         !lines |> List.rev |> String.concat "\n"
 
-
-
 let size_to_int = function `BYTE -> 1 | `WORD -> 2 | `DWORD -> 4 | `QWORD -> 8
 
 let emit_data size = 
@@ -36,7 +34,7 @@ let emit_data size =
         | Numb x :: xs -> let x = to_bytes x in emit_data (x::acc) xs in
     emit_data []
 
-let emmit = function 
+let emit = function 
 | Op ("db", args) -> emit_data `BYTE args
 | Op ("dw", args) -> emit_data `WORD args
 | Op ("dd", args) -> emit_data `DWORD args
@@ -52,7 +50,7 @@ let () =
     | Ok (ast, { pos = pos; _ }) when pos = String.length o ->
         let t = List.map ast_to_string ast in
         "Yay " ^ String.concat "\n" t |> print_endline;
-        let bytes = List.map emmit ast |> List.fold_left Bytes.cat Bytes.empty in
+        let bytes = List.map emit ast |> List.fold_left Bytes.cat Bytes.empty in
         let o = open_out_bin "test.o" in
         output_bytes o bytes;
         close_out o
