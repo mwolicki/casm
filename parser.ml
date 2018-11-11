@@ -9,9 +9,9 @@ let pos_to_string (txt:txt) =
     if n = 0 then ln, pos 
     else match txt with
         | [] -> ln, pos
-        | '\n'::ls -> loop (n - 1) (ln + 1) pos ls
+        | '\n'::ls -> loop (n - 1) (ln + 1) 1 ls
         | _::ls -> loop (n - 1) ln (pos + 1) ls in
-    let (ln, pos) = loop txt.pos 0 0 (txt.str |> String.to_seq |> List.of_seq) in
+    let (ln, pos) = loop txt.pos 1 1 (txt.str |> String.to_seq |> List.of_seq) in
     " line: " ^ (string_of_int ln) ^ " column: " ^ (string_of_int pos)
 
 
@@ -47,7 +47,6 @@ let (<<<) a b =  (a <|> b) @=> fst
 let (<<<?) a b = a <<< {
     name = "try parse " ^ b.name;
     parse = fun txt -> match b.parse txt with Ok (_, txt) -> Ok ((), txt) | Error _ -> Ok ((), txt) }
-
 
 let pChar (ch:char) : char parser =
     let str_ch = char_to_string ch in
@@ -120,19 +119,21 @@ let pStringLiteral (quote:char) = pChar quote >>> (pAll2 ((pChar '\\' >>> pChar 
 
 let pStr str = (String.to_seq str |> List.of_seq |> List.map pChar |> pAll) @@ ("parse string " ^ str)
 let pInt = 
+    let numChars = (pCharRange '0' '9') in
+    let parse = (pStr "0x" >>> numChars @=> fun b -> '0' :: 'x' :: b) ||| numChars in
     { name = "int parser";
       parse = fun txt -> 
-            match (pCharRange '0' '9').parse txt with
+            match parse.parse txt with
             | Ok (v, txt2) ->
                 let v = chars_to_string v in begin
-                match v |> int_of_string_opt with 
+                match v |> Int64.of_string_opt with 
                 | Some x -> Ok (x, txt2)
                 | None -> Error ("cannot parse '" ^ v ^ "' to int") end
             | Error e -> Error e }
 
 
 
-let pInteger = (pStr "0x" >>> pInt) ||| pInt
+let pInteger = pInt
 
 let pWhitespace = ['\r'; ' '; '\t'] |> List.map pChar |> pChoose |> pAll2
 

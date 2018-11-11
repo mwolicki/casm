@@ -1,10 +1,11 @@
 !org 0x1234
-dasdas asd, "asd 
-    \\"sdhfjksdhkf\"
-safsd"
 
-    #    hdsajkjds aslkjdhkljjahs askljdjklashjk klsajhdjkhas
-#commment like nothing
-#comment
-a b             , c # ala ma kota
- a          b ,       c         0x1114324 "dasjhduahs ajskhd jkahsjkd ha" # COMMMMENT jsahdjkahsjkdhajkhsdjk
+    # asdf
+db "a" # asdf
+db 1, 2, 3
+dw 1234, 0x123
+dd 0x12345678
+dq 0x1625376123786162
+dw 01234
+
+dd 1
