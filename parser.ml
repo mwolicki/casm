@@ -1,9 +1,4 @@
-type txt = {
-    str : string;
-    pos : int;
-}
-
-
+type txt = { str : string; pos : int; }
 let pos_to_string (txt:txt) =
     let rec loop n ln pos txt = 
     if n = 0 then ln, pos 
@@ -14,12 +9,9 @@ let pos_to_string (txt:txt) =
     let (ln, pos) = loop txt.pos 1 1 (txt.str |> String.to_seq |> List.of_seq) in
     " line: " ^ (string_of_int ln) ^ " column: " ^ (string_of_int pos)
 
-
 let to_txt txt =  { str = txt; pos = 0 }
 
-type 'a parser = {
-    name : string;
-    parse : txt -> ('a * txt, string) result; }
+type 'a parser = { name : string; parse : txt -> ('a * txt, string) result; }
 
 let char_to_string = String.make 1
 
@@ -71,7 +63,6 @@ let pChoose (parsers:'a parser list) : 'a parser =
     | p::ps -> match p.parse txt with Ok _ as o -> o | Error _ -> parse txt ps in
     { name = "any parser";
       parse = fun txt -> parse txt parsers; }
-
 let (|||) a b =  pChoose [a;b]
 
 let pAll (parsers:'a parser list) : 'a list parser =
@@ -130,10 +121,6 @@ let pInt =
                 | Some x -> Ok (x, txt2)
                 | None -> Error ("cannot parse '" ^ v ^ "' to int") end
             | Error e -> Error e }
-
-
-
-let pInteger = pInt
 
 let pWhitespace = ['\r'; ' '; '\t'] |> List.map pChar |> pChoose |> pAll2
 

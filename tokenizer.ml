@@ -24,7 +24,7 @@ let is = function
 | Error r -> "noooop " ^ r
 
 let comment = pChar '#' >>> pAll2(pNotChar '\n') @=> ignore
-let pArg = pWhitespace >>> ((pIdent @=> fun a -> Ident a) ||| (pInteger @=> fun a -> Numb a) ||| (pStringLiteral '"'  @=> fun a -> Ident a))
+let pArg = pWhitespace >>> ((pIdent @=> fun a -> Ident a) ||| (pInt @=> fun a -> Numb a) ||| (pStringLiteral '"'  @=> fun a -> Ident a))
 let directive = 
     (pZeroWhitespace >>> pChar '!' >>> pString <|> pSep pArg ',' <<< pZeroWhitespace) @=> fun (name, args)-> Directive (name, args)
 let op = 
