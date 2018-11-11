@@ -13,17 +13,19 @@ let load_file filename : string =
         close_in chan;
         !lines |> List.rev |> String.concat "\n"
 
-let size_to_int = function `BYTE -> 1 | `WORD -> 2 | `DWORD -> 4 | `QWORD -> 8
+type size = BYTE | WORD | DWORD| QWORD 
+
+let size_to_int = function BYTE -> 1 | WORD -> 2 | DWORD -> 4 | QWORD -> 8
 
 let emit_data size = 
     let to_bytes (v:Int64.t) = 
         let buff = Bytes.create (size_to_int size) in
         let () =
             match size with 
-            | `BYTE -> Int8.to_bytes_little_endian (Int8.of_int64 v) buff 0
-            | `WORD -> Int16.to_bytes_little_endian (Int16.of_int64 v) buff 0
-            | `DWORD -> Int32.to_bytes_little_endian (Int32.of_int64 v) buff 0
-            | `QWORD -> Int64.to_bytes_little_endian (Int64.of_int64 v) buff 0 in
+            | BYTE -> Int8.to_bytes_little_endian (Int8.of_int64 v) buff 0
+            | WORD -> Int16.to_bytes_little_endian (Int16.of_int64 v) buff 0
+            | DWORD -> Int32.to_bytes_little_endian (Int32.of_int64 v) buff 0
+            | QWORD -> Int64.to_bytes_little_endian (Int64.of_int64 v) buff 0 in
         buff in
 
     let rec emit_data (acc:Bytes.t list) = function 
@@ -35,10 +37,10 @@ let emit_data size =
     emit_data []
 
 let emit = function 
-| Op ("db", args) -> emit_data `BYTE args
-| Op ("dw", args) -> emit_data `WORD args
-| Op ("dd", args) -> emit_data `DWORD args
-| Op ("dq", args) -> emit_data `QWORD args
+| Op ("db", args) -> emit_data BYTE args
+| Op ("dw", args) -> emit_data WORD args
+| Op ("dd", args) -> emit_data DWORD args
+| Op ("dq", args) -> emit_data QWORD args
 | Directive _ -> (*Ignore for now *) Bytes.empty
 | Label _ -> (*Ignore for now *) Bytes.empty
 | x -> failwith ("Unknown ast element " ^ (ast_to_string x))
