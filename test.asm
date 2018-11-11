@@ -1,8 +1,8 @@
 !org 0x1234
 
-dd labela, labelb
+dd label1, label2
 
-:labela
+:label1
     # asdf
 db "a" # asdf
 db 1, 2, 3
@@ -11,12 +11,12 @@ dd 0x12345678
 dq 0x1625376123786162
 dw 01234
 
-dw labela, labelb
+dw label1, label2
 
-:labelb
+:label1
 db 1
 #dsa
 
-dw labela, labelb
+dw label1, label2
 
 #kdjslhfjkldfs

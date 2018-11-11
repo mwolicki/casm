@@ -102,14 +102,14 @@ let pZeroAll2 (parser:'a parser) : 'a list parser =
       parse = fun txt -> parse [] txt; }
 
 
-let pCharRange startChar endChar =
+let pAnyCharOf  startChar endChar   =
     let startChar' = Char.code startChar in
     let endChar' = Char.code endChar in
     (List.init (endChar' - startChar') (fun ch -> Char.chr (startChar' + ch) |> pChar)
     |> pChoose)
     @@ "[" ^ (char_to_string startChar) ^ " .. " ^ (char_to_string endChar) ^ "]"
-    |> pAll2
 
+let pCharRange startChar endChar = pAnyCharOf startChar endChar |> pAll2
 
 let chars_to_string x = String.concat "" (List.map (String.make 1) x)
 
@@ -146,9 +146,8 @@ let refl (p: 'a parser -> 'a parser) : 'a parser =
     r := x;
     z
 
-let pSep pWhat chSep =
-    (pWhat <|> (pZeroAll2 (pZeroWhitespace >>> pChar chSep >>> pWhat))) @=> fun (x, xs) -> x :: xs
+let pSep pWhat chSep = (pWhat <|> (pZeroAll2 (pZeroWhitespace >>> pChar chSep >>> pWhat))) @=> fun (x, xs) -> x :: xs
 
 let pBetween chStart pWhat chSep chEnd = pChar chStart >>> pSep pWhat chSep <<< pChar chEnd
-
 let pIgnore a = a @=> ignore
+let pIdent = (pAnyCharOf 'A' 'z' <|> pAll2 (pAnyCharOf '0' 'z')) @=> fun (x,xs) ->  chars_to_string (x::xs)
