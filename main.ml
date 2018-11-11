@@ -39,9 +39,9 @@ let is = function
 let comment = pChar '#' >>> pAll2(pNotChar '\n') @=> ignore
 let pArg = pWhitespace >>> ((pString @=> fun a -> Ident a) ||| (pInteger @=> fun a -> Numb a) ||| (pStringLiteral '"'  @=> fun a -> Ident a))
 let directive = 
-    (pZeroWhitespace >>> pChar '!' >>> pString <|> pAll2 pArg <<< pZeroWhitespace) @=> fun (name, args)-> Directive (name, args)
+    (pZeroWhitespace >>> pChar '!' >>> pString <|> pSep pArg ',' <<< pZeroWhitespace) @=> fun (name, args)-> Directive (name, args)
 let op = 
-    (pZeroWhitespace >>> pString <|> pAll2 pArg <<< pZeroWhitespace) @=> fun (name, args)-> Op (name, args)
+    (pZeroWhitespace >>> pString <|> pSep pArg ',' <<< pZeroWhitespace) @=> fun (name, args)-> Op (name, args)
 let label = (pZeroWhitespace >>> pString <<< pChar ':') @=> fun name -> Label name
 let newLineAndEmptyLines = pAll2(pZeroWhitespace <<<? comment  >>> pChar '\n')
 let line = directive ||| op ||| label
@@ -55,5 +55,3 @@ let () =
         let t = List.map ast_to_string i in
         "Yay " ^ String.concat "\n" t |> print_endline
     | Error r -> "noooop " ^ r |> print_endline
-    
-

@@ -93,6 +93,16 @@ let pAll2 (parser:'a parser) : 'a list parser =
     { name = "any parser";
       parse = fun txt -> parse [] txt; }
 
+let pZeroAll2 (parser:'a parser) : 'a list parser =
+    let rec parse acc txt = 
+        match parser.parse txt with
+        | Ok (v, txt) -> parse (v::acc) txt
+        | Error _ -> Ok (List.rev acc, txt)
+    in
+    { name = "any parser";
+      parse = fun txt -> parse [] txt; }
+
+
 let pCharRange startChar endChar =
     let startChar' = Char.code startChar in
     let endChar' = Char.code endChar in
@@ -135,4 +145,7 @@ let refl (p: 'a parser -> 'a parser) : 'a parser =
     r := x;
     z
 
+let pSep pWhat chSep =
+    (pWhat <|> (pZeroAll2 (pZeroWhitespace >>> pChar chSep >>> pWhat))) @=> fun (x, xs) -> x :: xs
 
+let pBetween chStart pWhat chSep chEnd = pChar chStart >>> pSep pWhat chSep <<< pChar chEnd
