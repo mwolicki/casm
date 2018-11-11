@@ -8,4 +8,7 @@ dd 0x12345678
 dq 0x1625376123786162
 dw 01234
 
-dd 1
+db 1
+#dsa
+
+#kdjslhfjkldfs

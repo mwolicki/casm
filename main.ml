@@ -48,7 +48,10 @@ let newLineAndEmptyLines = pAll2(pZeroWhitespace <<<? comment <<< pChar '\n')
 let line = directive ||| op ||| label
 let lines = 
     refl(fun lines -> (((line <<< newLineAndEmptyLines) <|> lines) @=> fun (a,b) -> a::b) ||| (line @=> fun a -> [a]))
-    
+
+let pFile = lines <<< pZeroAll2(pChoose [pIgnore pWhitespace; pIgnore comment;  pIgnore (pChar '\n')])
+
+
 open Stdint
 
 let int_size = function
@@ -64,8 +67,8 @@ let emit_data size =
         match size with 
         | `BYTE -> Int8.to_bytes_little_endian (Int8.of_int64 v) buff 0
         | `WORD -> Int16.to_bytes_little_endian (Int16.of_int64 v) buff 0
-        | `DWORD -> Int24.to_bytes_little_endian (Int24.of_int64 v) buff 0
-        | `QWORD -> Int32.to_bytes_little_endian (Int32.of_int64 v) buff 0 in
+        | `DWORD -> Int32.to_bytes_little_endian (Int32.of_int64 v) buff 0
+        | `QWORD -> Int64.to_bytes_little_endian (Int64.of_int64 v) buff 0 in
         buff
     in
 
@@ -88,7 +91,7 @@ let emmit = function
 let () =
     let o = load_file "test.asm" in
     
-    match o |> Parser.to_txt |> lines.parse with
+    match o |> Parser.to_txt |> pFile.parse with
     | Ok (ast, { pos = pos; _ }) when pos = String.length o ->
         let t = List.map ast_to_string ast in
         "Yay " ^ String.concat "\n" t |> print_endline;
@@ -97,5 +100,9 @@ let () =
         output_bytes o bytes;
         close_out o
 
-    | Ok (_, txt) -> "noooop; pos" ^ (pos_to_string txt) |> print_endline
-    | Error r -> "noooop " ^ r |> print_endline
+    | Ok (_, txt) -> 
+        "noooop; pos" ^ (pos_to_string txt) |> print_endline;
+        exit 1
+    | Error r -> 
+        "noooop " ^ r |> print_endline;
+        exit 2

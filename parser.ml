@@ -150,3 +150,5 @@ let pSep pWhat chSep =
     (pWhat <|> (pZeroAll2 (pZeroWhitespace >>> pChar chSep >>> pWhat))) @=> fun (x, xs) -> x :: xs
 
 let pBetween chStart pWhat chSep chEnd = pChar chStart >>> pSep pWhat chSep <<< pChar chEnd
+
+let pIgnore a = a @=> ignore
