@@ -30,10 +30,8 @@ let emit_data size =
 
     let rec emit_data (acc:Bytes.t list) = function 
         | [] -> List.rev acc |> List.fold_left Bytes.cat Bytes.empty
-        | Ident x :: xs -> 
-            let x = Bytes.of_string x in
-            emit_data (x::acc) xs
-        | Numb x :: xs -> let x = to_bytes x in emit_data (x::acc) xs in
+        | Ident x :: xs -> emit_data (Bytes.of_string x::acc) xs
+        | Numb x :: xs -> emit_data (to_bytes x::acc) xs in
     emit_data []
 
 let emit = function 
