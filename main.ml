@@ -18,7 +18,7 @@ type arg =
 
 type op = string
 
-type ast =
+type tokens =
 | Op of op * arg list
 | Label of name
 | Directive of name * arg list
@@ -43,7 +43,7 @@ let directive =
 let op = 
     ((pZeroWhitespace >>> pString <|> pSep pArg ',' <<< pZeroWhitespace) @=> fun (name, args)-> Op (name, args))
     ||| (pZeroWhitespace >>> pString) @=> fun name -> Op(name, [])
-let label = (pZeroWhitespace >>> pString <<< pChar ':') @=> fun name -> Label name
+let label = (pZeroWhitespace >>> pChar ':' >>> pString) @=> fun name -> Label name
 let newLineAndEmptyLines = pAll2(pZeroWhitespace <<<? comment <<< pChar '\n')
 let line = directive ||| op ||| label
 let lines = 
