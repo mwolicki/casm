@@ -46,7 +46,7 @@ let emit = function
 let () =
     let o = load_file "test.asm" in
     
-    match o |> Parser.to_txt |> pFile.parse with
+    match o |> Parser.to_txt |> call_parser pFile with
     | Ok (ast, { pos = pos; _ }) when pos = String.length o ->
         let t = List.map ast_to_string ast in
         "Yay " ^ String.concat "\n" t |> print_endline;
