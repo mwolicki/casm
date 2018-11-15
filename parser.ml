@@ -1,4 +1,4 @@
-type txt = { str : string; pos : int; simple_trampoline : int; }
+type txt = { str : string; pos : int; }
 let pos_to_string (txt:txt) =
     let rec loop n ln pos txt = 
     if n = 0 then ln, pos 
@@ -9,7 +9,7 @@ let pos_to_string (txt:txt) =
     let (ln, pos) = loop txt.pos 1 1 (txt.str |> String.to_seq |> List.of_seq) in
     " line: " ^ (string_of_int ln) ^ " column: " ^ (string_of_int pos)
 
-let to_txt txt =  { str = txt; pos = 0 ; simple_trampoline = 0 }
+let to_txt txt =  { str = txt; pos = 0 }
 
 module Uuid = Core.Uuid
 
@@ -140,10 +140,13 @@ let pWhitespace = ['\r'; ' '; '\t'] |> List.map pChar |> pChoose |> pAll2
 let pZeroWhitespace = { pWhitespace with f_parse = fun txt -> match call_parser pWhitespace txt with Ok _ as o -> o | Error _ -> Ok ([], txt)  }
 
 let refl (p: 'a parser -> 'a parser) : 'a parser =
+    let counter = ref 0 in
     let r = ref (fun () -> failwith "impossible") in
     let z = p { name = "refl"; uuid = Uuid.create (); f_parse = fun txt -> 
-      if txt.simple_trampoline <= 50 then call_parser (!r()) { txt with simple_trampoline = txt.simple_trampoline + 1 }
-      else Error ("simple trampoilne error (too many rec calls)")
+      counter := !counter + 1;
+      let res =if !counter <= 50 then call_parser (!r()) txt else Error ("simple trampoilne error (too many rec calls)") in
+      counter := !counter - 1;
+      res
     } in
     let x = fun () -> z in
     r := x;
